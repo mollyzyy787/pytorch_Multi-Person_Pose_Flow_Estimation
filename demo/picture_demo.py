@@ -42,13 +42,16 @@ update_config(cfg, args)
 
 
 
-model = get_model('vgg19')     
+model = get_model('vgg19')
 model.load_state_dict(torch.load(args.weight))
 model = torch.nn.DataParallel(model).cuda()
 model.float()
 model.eval()
 
-test_image = './readme/ski.jpg'
+#test_image = './readme/ski.jpg'
+test_image = '/home/molly/two-stream-fusion-for-action-recognition-in-videos/jpegs_256/v_Fencing_g03_c01/frame000001.jpg'
+#test_image = '/home/molly/two-stream-fusion-for-action-recognition-in-videos/jpegs_256/v_MilitaryParade_g01_c01/frame000001.jpg'
+
 oriImg = cv2.imread(test_image) # B,G,R order
 shape_dst = np.min(oriImg.shape[0:2])
 
@@ -56,10 +59,35 @@ shape_dst = np.min(oriImg.shape[0:2])
 
 with torch.no_grad():
     paf, heatmap, im_scale = get_outputs(oriImg, model,  'rtpose')
-          
-print(im_scale)
-humans = paf_to_pose_cpp(heatmap, paf, cfg)
-        
-out = draw_humans(oriImg, humans)
-cv2.imwrite('result.png',out)   
 
+print("paf shape =" , paf.shape)
+print("heatmap shape = ", heatmap.shape)
+print("Ori_img shape = ", oriImg.shape)
+print("im_scale = ", im_scale)
+
+humans = paf_to_pose_cpp(heatmap, paf, cfg)
+print("humans shape = ", len(humans))
+#print(humans[0].body_parts.keys())
+#print(humans[0].body_parts[0])
+
+out = draw_humans(oriImg, humans)
+#cv2.imwrite('result.png',out)
+cv2.imwrite('result_test.png',out)
+
+'''
+"./readme/ski.jpg"
+paf shape = (46, 49, 38)
+heatmap shape =  (46, 49, 19)
+Ori_img shape =  (674, 712, 3)
+im_scale =  0.5459940652818991
+humans shape =  5
+dict_keys([0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 14, 15, 16, 17])
+BodyPart:0-(0.09, 0.40) score=0.97
+
+for jpeg2_256 imgs:
+paf shape = (46, 62, 38)        #38 pairs of nodes (limbs)4
+heatmap shape =  (46, 62, 19)   #0-17 keys denoting body_parts and 18 for background
+Ori_img shape =  (256, 342, 3)
+im_scale =  1.4375
+
+'''
