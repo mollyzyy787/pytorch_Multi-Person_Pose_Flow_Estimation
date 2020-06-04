@@ -24,7 +24,9 @@ from evaluate.coco_eval import get_outputs, handle_paf_and_heat
 from lib.utils.common import Human, BodyPart, CocoPart, CocoColors, CocoPairsRender, draw_humans
 from lib.utils.paf_to_pose import paf_to_pose_cpp
 from lib.config import cfg, update_config
+from new_utils import get_pose_sparse_img, load_frame_count
 
+from split_train_test_video import *
 
 parser = argparse.ArgumentParser()
 parser.add_argument('--cfg', help='experiment configure file name',
@@ -40,17 +42,32 @@ args = parser.parse_args()
 # update config file
 update_config(cfg, args)
 
-
-
 model = get_model('vgg19')
 model.load_state_dict(torch.load(args.weight))
 model = torch.nn.DataParallel(model).cuda()
 model.float()
 model.eval()
 
+splitter = UCF101_splitter(path='/home/molly/two-stream-action-recognition/UCF_list/',split='04')
+train_video, test_video = splitter.split_video()
+
+frame_count = load_frame_count()
+
+for video_name in train_video.keys():
+    print(video_name)
+    print(frame_count[video_name])
+    for index in range(frame_count[video_name]):
+        get_pose_sparse_img(video_name, index+1, model)
+
+for video_name in test_video.keys():
+    print(video_name)
+    print(frame_count[video_name])
+    for index in range(frame_count[video_name]):
+        get_pose_sparse_img(video_name, index+1, model)
+
+
+'''
 #test_image = './readme/ski.jpg'
-test_image = '/home/molly/UCF_data/jpegs_256/v_TaiChi_g10_c02/frame000120.jpg'
-#test_image = '/home/molly/two-stream-fusion-for-action-recognition-in-videos/jpegs_256/v_MilitaryParade_g01_c01/frame000001.jpg'
 
 oriImg = cv2.imread(test_image) # B,G,R order
 shape_dst = np.min(oriImg.shape[0:2])
@@ -73,6 +90,7 @@ print("humans shape = ", len(humans))
 out = draw_humans(oriImg, humans)
 #cv2.imwrite('result.png',out)
 cv2.imwrite('/home/molly/UCF_data/pose_flow/result_test.png',out)
+'''
 
 '''
 "./readme/ski.jpg"
